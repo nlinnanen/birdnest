@@ -5,12 +5,13 @@ const http = require('http')
 const { Server } = require('socket.io')
 const axios = require('axios')
 
+const port = process.env.PORT || 3001
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server)
 
-app.use(cors())
 app.use(express.static('build'))
+app.use(cors())
 
 const { parseString } = require('xml2js')
 
@@ -86,11 +87,12 @@ setInterval(() => {
     .catch((err) => {
       console.error("Couldn't fetch drones: ", err)
     })
-}, 2000)
+}, 10000)
 
 io.on('connection', (socket) => {
   console.log('socket', socket.id, ' connected')
   updatePilots(socket)
 })
 
-io.listen(8080)
+server.listen(port)
+console.log(`Listening on port ${port}`)
