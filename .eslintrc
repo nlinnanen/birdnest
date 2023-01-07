@@ -3,6 +3,6 @@
   "rules":{
     "semi": 0,
     "no-console": 0,
-    "implicit-arrow-linebreak": 0,
+    "implicit-arrow-linebreak": 0
   }
 }

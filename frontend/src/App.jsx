@@ -4,26 +4,15 @@ import { io } from 'socket.io-client'
 const socket = io('http://localhost:8080')
 
 const App = () => {
-  const [isConnected, setIsConnected] = useState(socket.connected)
   const [pilots, setPilots] = useState()
 
   useEffect(() => {
-    socket.on('connect', () => {
-      setIsConnected(true)
-    })
-
-    socket.on('disconnect', () => {
-      setIsConnected(false)
-    })
-
     socket.on('pilots', (data) => {
       console.log(data)
       setPilots(data)
     })
 
     return () => {
-      socket.off('connect')
-      socket.off('disconnect')
       socket.off('pilots')
     }
   }, [])
@@ -45,7 +34,7 @@ const App = () => {
             </td>
             <td> {pilot.pilotId}</td>
             <td>{(minimumDistance / 1000).toFixed(0)} </td>
-            <td>{lastViolation.toLocaleString()}</td>
+            <td>{new Date(lastViolation).toLocaleTimeString('fi-FI', {timeStyle: "short"})}</td>
             <br />
             <br />
             <br />

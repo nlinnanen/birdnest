@@ -1,13 +1,17 @@
 /* eslint-disable comma-dangle */
-const options = {
-  cors: {
-    origin: '*',
-    allowedHeaders: '',
-  },
-}
-
-const io = require('socket.io')(options)
+const express = require('express')
+const cors = require('cors')
+const http = require('http')
+const { Server } = require('socket.io')
 const axios = require('axios')
+
+const app = express()
+const server = http.createServer(app)
+const io = new Server(server)
+
+app.use(cors())
+app.use(express.static('build'))
+
 const { parseString } = require('xml2js')
 
 const ORIGIN = { x: 250000, y: 250000 }
@@ -36,7 +40,8 @@ setInterval(() => {
           // and update minimum distance and last violation time to map
           // and update timout so that the pilot info is deleted after 10 minutes
           if (dist < RADIUS) {
-            if (pilots.has(serial)) { // pilot data is already fetched
+            if (pilots.has(serial)) {
+              // pilot data is already fetched
               clearTimeout(timeouts.get(serial))
               // update minimum distance and last violation time
               const prev = pilots.get(serial)
@@ -81,7 +86,7 @@ setInterval(() => {
     .catch((err) => {
       console.error("Couldn't fetch drones: ", err)
     })
-}, 10000)
+}, 2000)
 
 io.on('connection', (socket) => {
   console.log('socket', socket.id, ' connected')
