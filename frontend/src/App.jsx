@@ -34,7 +34,6 @@ const App = () => {
             </td>
             <td> {pilot.pilotId}</td>
             <td>{(minimumDistance / 1000).toFixed(0)} </td>
-            <td>{new Date(lastViolation).toLocaleTimeString('fi-FI', {timeStyle: "short"})}</td>
             <br />
             <br />
             <br />

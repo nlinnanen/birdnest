@@ -17,23 +17,25 @@ const removeAfterTen = (serial, pilots, timeouts, io) => {
   )
 }
 
-const updatePilotData = (serial, timeouts, pilots, dist, io) => {
+const updatePilotData = (serial, timeouts, pilots, dist) => {
   clearTimeout(timeouts.get(serial))
   // update minimum distance and last violation time
   const prev = pilots.get(serial)
   const minimumDistance = Math.min(prev.minimumDistance, dist)
 
-  if (minimumDistance === prev.minimumDistance) return
+  // if minimum distance didn't change return false so that pilots are not updated
+  if (minimumDistance === prev.minimumDistance) return false
 
   pilots.set(serial, {
     ...prev,
     minimumDistance,
-    lastViolation: new Date(),
   })
-  updatePilots(io)
+
+  // changes were made so return true so that pilots are updated
+  return true
 }
 
-const fetchAndUpdatePilotData = async (serial, pilots, dist, io) => {
+const fetchAndUpdatePilotData = async (serial, pilots, dist) => {
   const pilot = await axios
     .get(`https://assignments.reaktor.com/birdnest/pilots/${serial}`)
     .catch((pilotErr) => {
@@ -43,34 +45,37 @@ const fetchAndUpdatePilotData = async (serial, pilots, dist, io) => {
   pilots.set(serial, {
     pilot: pilot.data,
     minimumDistance: dist,
-    lastViolation: new Date(),
   })
-  // emit pilots to all sockets
-  updatePilots(io)
+
+  // changes were made so return true so that pilots are updated
+  return true
 }
 
+// get drones from parsed XML
 const dronesFromParsedXML = (result) => result.report.capture[0].drone
 
 const handleParsedDrones = async (err, result, pilots, timeouts, io) => {
+  let shouldUpdate = false
+  // iterate over each drone in the parsed XML
   dronesFromParsedXML(result).forEach((drone) => {
     const serial = drone.serialNumber[0]
     const dist = distance(drone.positionX[0], drone.positionY[0])
-
     // Check if drone is in NDZ
     // if so fetch pilot data if not already fetched
-    // and update minimum distance and last violation time to map
-    // and update timeout so that the pilot info is deleted after 10 minutes
+    // and update minimum distance and timeouts so that pilot data will be deleted after 10 minutes
     if (dist < RADIUS) {
       if (pilots.has(serial)) {
-        updatePilotData(serial, pilots, dist, timeouts, io)
+        shouldUpdate = shouldUpdate && updatePilotData(serial, pilots, dist, timeouts, io)
       } else {
-        fetchAndUpdatePilotData(serial, pilots, dist, io)
+        shouldUpdate = shouldUpdate && fetchAndUpdatePilotData(serial, pilots, dist, io)
       }
 
       // set timeout to delete pilot data after 10 minutes
       removeAfterTen(serial, pilots, timeouts, io)
     }
   })
+  // emit pilots to all sockets if any changes were made
+  if (shouldUpdate) updatePilots(io)
 }
 
 module.exports = {
