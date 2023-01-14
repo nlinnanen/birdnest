@@ -12,7 +12,7 @@ const removeAfterTen = (serial, pilots, timeouts, io) => {
     setTimeout(() => {
       pilots.delete(serial)
       timeouts.delete(serial)
-      updatePilots(io)
+      updatePilots(io, pilots)
     }, 1000 * 60 * 10)
   )
 }
@@ -55,6 +55,16 @@ const fetchAndUpdatePilotData = async (serial, pilots, dist) => {
 const dronesFromParsedXML = (result) => result.report.capture[0].drone
 
 const handleParsedDrones = async (err, result, pilots, timeouts, io) => {
+  if (err) {
+    console.error('Error parsing XML: ', err)
+    return
+  }
+
+  if (!result) {
+    console.error('No result from XML parsing')
+    return
+  }
+
   let shouldUpdate = false
   // iterate over each drone in the parsed XML
   dronesFromParsedXML(result).forEach((drone) => {
@@ -64,10 +74,11 @@ const handleParsedDrones = async (err, result, pilots, timeouts, io) => {
     // if so fetch pilot data if not already fetched
     // and update minimum distance and timeouts so that pilot data will be deleted after 10 minutes
     if (dist < RADIUS) {
+      console.log(`Drone ${serial} is in NDZ`)
       if (pilots.has(serial)) {
-        shouldUpdate = shouldUpdate && updatePilotData(serial, pilots, dist, timeouts, io)
+        shouldUpdate = updatePilotData(serial, timeouts, pilots, dist) || shouldUpdate 
       } else {
-        shouldUpdate = shouldUpdate && fetchAndUpdatePilotData(serial, pilots, dist, io)
+        shouldUpdate = fetchAndUpdatePilotData(serial, pilots, dist) || shouldUpdate
       }
 
       // set timeout to delete pilot data after 10 minutes
@@ -75,7 +86,7 @@ const handleParsedDrones = async (err, result, pilots, timeouts, io) => {
     }
   })
   // emit pilots to all sockets if any changes were made
-  if (shouldUpdate) updatePilots(io)
+  if (shouldUpdate) updatePilots(io, pilots)
 }
 
 module.exports = {

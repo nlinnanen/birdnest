@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { io } from 'socket.io-client'
 
-const socket = io()
+const ENV = process.env.NODE_ENV
+
+const socket = io(ENV === 'development' ? 'http://localhost:8080' : undefined)
 
 const App = () => {
   const [pilots, setPilots] = useState()
@@ -16,15 +18,15 @@ const App = () => {
       socket.off('pilots')
     }
   }, [])
+  console.log(pilots)
   return (
-    <table>
+    <table style={{width: "100%"}}>
       <thead>
-        <tr>
-          <td>name </td>
-          <td>id</td>
-          <td>Minimum distance (m)</td>
-          <td>Last violation</td>
-        </tr>
+          <th>name </th>
+          <th>id</th>
+          <th>phone</th>
+          <th>email</th>
+          <th>Minimum distance (m)</th>
       </thead>
       <tbody>
         {pilots?.map(({ pilot, minimumDistance, lastViolation }) => (
@@ -33,10 +35,9 @@ const App = () => {
               {pilot.firstName} {pilot.lastName}
             </td>
             <td> {pilot.pilotId}</td>
+            <td> {pilot.phoneNumber}</td>
+            <td> {pilot.email}</td>
             <td>{(minimumDistance / 1000).toFixed(0)} </td>
-            <br />
-            <br />
-            <br />
           </tr>
         ))}
       </tbody>
